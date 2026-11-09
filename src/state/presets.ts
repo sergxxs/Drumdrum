@@ -109,28 +109,30 @@ export const FM_PRESETS: FMPreset[] = [
   {
     name: 'KICK',
     params: {
-      algorithm: 2, index: 0.55, harmonic: 0, pitchEnv: 36, pitchEnvDec: envNorm(0.09),
-      ops: [op(0.5, 1, 0.35), op(1, 0.8, 0.12), op(1, 0.0, 0.1), op(1, 0.0, 0.1)],
+      // 2xPAIR: op1 is the 0.5x sub body, op2 a very short click modulator
+      algorithm: 2, index: 0.22, harmonic: 0, pitchEnv: 42,
+      pitchEnvDec: envNorm(0.055),
+      ops: [op(0.5, 1, 0.8, { sus: 0.55 }), op(1, 0.5, 0.06), op(1, 0, 0.1), op(1, 0, 0.1)],
     },
-    amp: { atk: envNorm(0.002), dec: envNorm(0.34), sus: 0, rel: envNorm(0.15), vel: 0.2 },
-    filter: { cutoff: 9000, reso: 0.08 },
+    amp: { atk: envNorm(0.001), dec: envNorm(0.8), sus: 0, rel: envNorm(0.2), vel: 0.25 },
+    filter: { type: 'LP12', cutoff: 3200, reso: 0.1, drive: 0.15 },
   },
   {
     name: 'SNARE',
     params: {
-      algorithm: 1, index: 0.42, noise: 0.55, pitchEnv: 0,
-      ops: [op(2, 0.9, 0.22), op(3, 0.75, 0.18), op(1.5, 0.3, 0.1), op(7, 0.5, 0.08)],
+      algorithm: 1, index: 0.55, noise: 0.62, pitchEnv: 0,
+      ops: [op(2, 0.75, 0.3, { sus: 0.45 }), op(3, 0.6, 0.22, { sus: 0.35 }), op(1.5, 0.3, 0.1), op(7, 0.4, 0.06)],
     },
-    amp: { atk: envNorm(0.001), dec: envNorm(0.28), sus: 0, rel: envNorm(0.12), vel: 0.5 },
-    filter: { type: 'BP12', cutoff: 2600, reso: 0.25 },
+    amp: { atk: envNorm(0.001), dec: envNorm(0.75), sus: 0, rel: envNorm(0.16), vel: 0.5 },
+    filter: { type: 'HP12', cutoff: 380, reso: 0.12 },
   },
   {
     name: 'METALLIC',
     params: {
-      algorithm: 6, index: 0.7, harmonic: 1, pitchEnv: 0,
-      ops: [op(1, 0.9, 0.4), op(3.5, 0.6, 0.25), op(5.5, 0.7, 0.18), op(9, 0.8, 0.08)],
+      algorithm: 6, index: 0.62, harmonic: 0.8, pitchEnv: 0,
+      ops: [op(1, 0.9, 0.7, { sus: 0.25 }), op(3.5, 0.55, 0.45), op(5.5, 0.6, 0.3), op(9, 0.7, 0.12)],
     },
-    amp: { atk: envNorm(0.001), dec: envNorm(0.45), sus: 0.2, rel: envNorm(0.3), vel: 0.6 },
+    amp: { atk: envNorm(0.001), dec: envNorm(0.9), sus: 0.12, rel: envNorm(0.4), vel: 0.6 },
     filter: { cutoff: 14000, reso: 0.1 },
   },
   {
@@ -146,9 +148,12 @@ export const FM_PRESETS: FMPreset[] = [
     name: 'DIGI BASS',
     params: {
       algorithm: 3, index: 0.6, harmonic: 0, glide: envNorm(0.15), pitchEnv: -6, pitchEnvDec: envNorm(0.15),
-      ops: [op(0.5, 1, 0.5, { sus: 0.8, atk: envNorm(0.02) }), op(1, 0.55, 0.4), op(2, 0.2, 0.3), op(1, 0, 0.2)],
+      ops: [
+        op(0.5, 1, 0.5, { sus: 0.85, atk: envNorm(0.004) }),
+        op(1, 0.5, 0.4), op(2, 0.22, 0.3), op(1, 0.3, 0.06),
+      ],
     },
-    amp: { atk: envNorm(0.004), dec: envNorm(0.5), sus: 0.85, rel: envNorm(0.2), vel: 0.4 },
+    amp: { atk: envNorm(0.003), dec: envNorm(0.5), sus: 0.85, rel: envNorm(0.2), vel: 0.4 },
     filter: { cutoff: 4200, reso: 0.3, env: 0.35, envDec: envNorm(0.25) },
   },
   {
@@ -163,10 +168,10 @@ export const FM_PRESETS: FMPreset[] = [
   {
     name: 'PERC',
     params: {
-      algorithm: 7, index: 0.5, harmonic: 0.2, sat: 0.2, pitchEnv: 12, pitchEnvDec: envNorm(0.06),
-      ops: [op(1, 0.8, 0.18), op(1.5, 0.7, 0.14), op(2.5, 0.55, 0.1), op(4.5, 0.5, 0.07)],
+      algorithm: 7, index: 0.5, harmonic: 0.2, sat: 0.25, pitchEnv: 14, pitchEnvDec: envNorm(0.05),
+      ops: [op(1, 0.85, 0.4, { sus: 0.2 }), op(1.5, 0.7, 0.25), op(2.5, 0.55, 0.15), op(4.5, 0.45, 0.1)],
     },
-    amp: { atk: envNorm(0.001), dec: envNorm(0.22), sus: 0, rel: envNorm(0.1), vel: 0.7 },
+    amp: { atk: envNorm(0.001), dec: envNorm(0.35), sus: 0, rel: envNorm(0.12), vel: 0.7 },
     filter: { cutoff: 12000, reso: 0.15 },
   },
   {
@@ -175,7 +180,7 @@ export const FM_PRESETS: FMPreset[] = [
       algorithm: 0, index: 0.85, noise: 0.3, pitchEnv: -24, pitchEnvDec: envNorm(0.7), sat: 0.4,
       ops: [op(1, 0.7, 0.9), op(2, 0.8, 0.8, { feedback: 0.35 }), op(3, 0.6, 0.7), op(5, 0.9, 0.6, { feedback: 0.5 })],
     },
-    amp: { atk: envNorm(0.2), dec: envNorm(0.9), sus: 0.8, rel: envNorm(0.8), vel: 0.3 },
+    amp: { atk: envNorm(0.2), dec: envNorm(0.9), sus: 0.55, rel: envNorm(0.8), vel: 0.3 },
     filter: { cutoff: 6000, reso: 0.3, env: 0.6, envAtk: envNorm(0.5), envDec: envNorm(0.8) },
   },
 ];

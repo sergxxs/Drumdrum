@@ -111,6 +111,8 @@ export class AudioEngine {
   songMode = false;
   private songStep = 0;
   private songRepeat = 0;
+  /** index of the pattern the transport is playing (may differ from the UI's selection) */
+  patternIndex = 0;
 
   setSongMode(on: boolean) {
     this.songMode = on;
@@ -140,6 +142,7 @@ export class AudioEngine {
       }
       const target = steps[this.songStep % steps.length].pattern;
       this.setPattern(this.patternProvider(target));
+      this.patternIndex = target;
       return;
     }
     // pattern chain
@@ -153,7 +156,10 @@ export class AudioEngine {
       this.chainIndex = 0;
     }
     const target = this.chain[this.chainIndex];
-    if (target !== undefined) this.setPattern(this.patternProvider(target));
+    if (target !== undefined) {
+      this.setPattern(this.patternProvider(target));
+      this.patternIndex = target;
+    }
   }
 
   loopSong = true;

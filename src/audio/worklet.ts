@@ -181,6 +181,7 @@ class GrooveboxProcessor extends AudioWorkletProcessor {
         playing: e.seq.playing,
         frame: e.frame,
         recFrames: e.recordedFrames,
+        patternIndex: e.patternIndex,
       } as HostReply);
     }
     return true;

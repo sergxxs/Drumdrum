@@ -271,6 +271,56 @@ describe('engine-level sequencing', () => {
   });
 });
 
+describe('song mode and pattern chain', () => {
+  it('advances to the next chained pattern at the pattern boundary', () => {
+    const project = defaultProject();
+    const engine = new AudioEngine(project, { sampleRate: 44100, blockSize: 256 });
+    engine.patternProvider = (i) => project.patterns[i];
+    engine.chain = [0, 1];
+    engine.chainLoop = true;
+    engine.play();
+    // 1 bar at 120bpm = 88200 frames; render 2 bars worth of blocks
+    const bl = new Float32Array(256);
+    const br = new Float32Array(256);
+    for (let i = 0; i < (44100 * 2.2) / 256; i++) engine.processInto(bl, br, 256);
+    expect(engine.patternIndex).toBe(1);
+    expect(engine.seq.pattern.name).toContain('TECH');
+  });
+
+  it('follows the song arrangement with repeat counts', () => {
+    const project = defaultProject();
+    project.songs[0].steps = [{ pattern: 0, repeats: 1 }, { pattern: 1, repeats: 1 }];
+    const engine = new AudioEngine(project, { sampleRate: 44100 });
+    engine.patternProvider = (i) => project.patterns[i];
+    engine.setSongMode(true);
+    engine.play();
+    const bl = new Float32Array(256);
+    const br = new Float32Array(256);
+    for (let i = 0; i < (44100 * 2.2) / 256; i++) engine.processInto(bl, br, 256);
+    expect(engine.patternIndex).toBe(1);
+    for (let i = 0; i < (44100 * 2.2) / 256; i++) engine.processInto(bl, br, 256);
+    // arrangement loops back to the first pattern
+    expect(engine.patternIndex).toBe(0);
+  });
+
+  it('the metronome adds audible clicks when enabled', () => {
+    const withClick = (on: boolean) => {
+      const project = defaultProject();
+      const engine = new AudioEngine(project, { sampleRate: 44100 });
+      for (let t = 0; t < 8; t++) project.kits[0].tracks[t].params.mute = true;
+      engine.setKit(project.kits[0]);
+      engine.setClick(on);
+      engine.play();
+      const out = engine.renderOffline(1.0);
+      return out;
+    };
+    const on = withClick(true);
+    const off = withClick(false);
+    expect(rms(off.left)).toBeLessThan(0.001);
+    expect(rms(on.left)).toBeGreaterThan(0.001);
+  });
+});
+
 describe('store actions', () => {
   it('toggles steps, records notes and supports undo', () => {
     installCanvasStubs();

@@ -42,6 +42,8 @@ export interface MeterMessage {
   playing: boolean;
   frame: number;
   recFrames: number;
+  /** pattern the transport is playing (follows song mode / chain) */
+  patternIndex: number;
 }
 
 export interface RecordingReply {

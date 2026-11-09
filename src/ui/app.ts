@@ -1365,7 +1365,12 @@ export class App {
   /* ------------------------------------------------------------------- sync --- */
 
   private syncAudioPattern() {
-    audioService.setPattern(this.store.pattern);
+    const p = this.store.project;
+    audioService.setPattern(this.store.pattern, {
+      chain: p.chain,
+      chainLoop: p.chainLoop,
+      songMode: this.screen.kind === 'mode' && this.screen.name === 'SONG' && this.store.ui.playing,
+    });
     audioService.setTempo(this.store.pattern.tempo);
     audioService.setSwing(this.store.pattern.swing);
   }
@@ -1511,6 +1516,13 @@ export class App {
     this.status.frames = m.frame;
     if (this.store.ui.playing !== m.playing) {
       this.store.ui.playing = m.playing;
+    }
+    // Song mode / pattern chaining change the pattern on the audio thread; mirror it here
+    // so the LCD always shows what is actually playing. The store subscription only
+    // repaints — it never pushes patterns back to the engine — so there is no feedback.
+    if (typeof m.patternIndex === 'number' && m.patternIndex !== this.store.project.currentPattern) {
+      this.store.project.currentPattern = m.patternIndex;
+      this.toast(`PATTERN ${m.patternIndex + 1}`);
     }
     if (m.recFrames > 0) this.status.recActive = true;
   }

@@ -148,6 +148,27 @@ console.log('✓ navigation cluster');
 
 // transport / step groups
 all('[data-step-adj]').forEach((b) => b.click());
+
+// transport encoders: FX send + master must both reach the engine/store
+const sendKnob = el('[data-knob="send"]');
+const masterKnob = el('[data-knob="master"]');
+const volBefore = app.store.project.master.volume;
+const sendBefore = app.store.track.sendA;
+for (const k of [sendKnob, masterKnob]) {
+  fire(k, 'pointerdown', { clientY: 300 });
+  fire(k, 'pointermove', { clientY: 280 });
+  fire(k, 'pointermove', { clientY: 260 });
+  fire(k, 'pointermove', { clientY: 240 });
+  fire(k, 'pointermove', { clientY: 200 });
+  fire(k, 'pointerup', { clientY: 200 });
+}
+const masterVol = app.store.project.master.volume;
+console.log('  send/master encoders: sendA =', app.store.track.sendA.toFixed(2),
+  '| master vol =', masterVol.toFixed(2));
+if (Math.abs(masterVol - volBefore) < 0.005) throw new Error('master encoder did not change volume');
+if (Math.abs(app.store.track.sendA - sendBefore) < 0.005) throw new Error('fx send encoder did not change sendA');
+console.log('  transport encoders moved: master', volBefore.toFixed(2), '->', masterVol.toFixed(2),
+  '| sendA', sendBefore.toFixed(2), '->', app.store.track.sendA.toFixed(2));
 console.log('✓ speed/length/swing');
 
 // functions
