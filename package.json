@@ -1,0 +1,23 @@
+{
+  "name": "hybrid-groovebox",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "HYBRID GROOVEBOX — 8-track FM / digital / sampler groovebox for iPhone",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "vite-node scripts/smoke.ts",
+    "build:worklet": "node scripts/build.mjs --worklet-only"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "linkedom": "^0.18.15",
+    "typescript": "^5.6.0",
+    "vite": "^8.3.7",
+    "vitest": "^2.1.0"
+  }
+}

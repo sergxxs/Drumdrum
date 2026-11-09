@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>HYBRID GROOVEBOX</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0a0b0d" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="device" class="device">
+        <!-- ======================= TOP ROW ======================= -->
+        <div class="head-row">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 44 44" width="100%" height="100%">
+            <rect x="1" y="1" width="42" height="42" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M6 6 L6 30 L30 6 Z" fill="currentColor" opacity="0.85"/>
+            <path d="M38 38 L38 14 L14 38 Z" fill="currentColor" opacity="0.35"/>
+          </svg>
+        </div>
+        <div class="brand">
+          <div class="brand-name">HYBRID</div>
+          <div class="brand-model">GROOVEBOX</div>
+          <div class="brand-lines"><i></i><i></i><i></i></div>
+        </div>
+
+        <nav class="mode-row" id="mode-row">
+          <button class="hw-btn mode" data-mode="pattern"><span class="led"></span>PATTERN</button>
+          <button class="hw-btn mode" data-mode="kit"><span class="led"></span>KIT</button>
+          <button class="hw-btn mode" data-mode="song"><span class="led"></span>SONG</button>
+          <button class="hw-btn mode" data-mode="mix"><span class="led"></span>MIX</button>
+          <button class="hw-btn mode" data-mode="fx"><span class="led"></span>FX</button>
+          <button class="hw-btn mode" data-mode="setup"><span class="led"></span>SETUP</button>
+        </nav>
+        <div class="rec-bay">
+          <button class="hw-btn rec" id="btn-rec"><span class="led red"></span>REC</button>
+          <button class="hw-btn" id="btn-select">SELECT</button>
+          <button class="hw-btn" id="btn-format"><span class="led"></span><span id="format-label">MP3/WAV</span></button>
+        </div>
+        </div><!-- /head-row -->
+
+        <!-- ======================= MAIN ======================= -->
+        <div class="main-row">
+        <div class="nav-cluster">
+          <button class="hw-btn nav up" data-nav="up" aria-label="up"></button>
+          <button class="hw-btn nav left" data-nav="left" aria-label="left"></button>
+          <button class="hw-btn nav center" data-nav="center" aria-label="enter"></button>
+          <button class="hw-btn nav right" data-nav="right" aria-label="right"></button>
+          <button class="hw-btn nav down" data-nav="down" aria-label="down"></button>
+        </div>
+
+        <div class="screen-bezel">
+          <canvas id="lcd" class="lcd"></canvas>
+          <div class="screen-glare"></div>
+          <div class="screen-fx"></div>
+        </div>
+
+        <div class="value-column">
+          <div class="battery" aria-hidden="true"><span></span></div>
+          <div class="big-knob-wrap">
+            <div class="knob big" id="value-knob" data-knob="value" tabindex="0" role="slider" aria-label="Value encoder">
+              <div class="knob-top"><i class="knob-dot"></i></div>
+              <div class="knob-ridge"></div>
+            </div>
+            <div class="knob-label">VALUE</div>
+          </div>
+        </div>
+
+        <div class="param-knobs" id="param-knobs">
+          <div class="pknob" data-knob="a">
+            <div class="knob" tabindex="0" role="slider" aria-label="Encoder A"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="pknob-name">A</div>
+            <div class="pknob-label" data-label="a">—</div>
+          </div>
+          <div class="pknob" data-knob="b">
+            <div class="knob" tabindex="0" role="slider" aria-label="Encoder B"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="pknob-name">B</div>
+            <div class="pknob-label" data-label="b">—</div>
+          </div>
+          <div class="pknob" data-knob="c">
+            <div class="knob" tabindex="0" role="slider" aria-label="Encoder C"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="pknob-name">C</div>
+            <div class="pknob-label" data-label="c">—</div>
+          </div>
+          <div class="pknob" data-knob="d">
+            <div class="knob" tabindex="0" role="slider" aria-label="Encoder D"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="pknob-name">D</div>
+            <div class="pknob-label" data-label="d">—</div>
+          </div>
+        </div>
+
+        <!-- ======================= PADS ======================= -->
+        <div class="pad-bay">
+          <div class="pads" id="pads">
+            <div class="pad-col" data-track="0"><i class="pad-led"></i><span class="pad-num">1</span><button class="pad" data-track="0"></button></div>
+            <div class="pad-col" data-track="1"><i class="pad-led"></i><span class="pad-num">2</span><button class="pad" data-track="1"></button></div>
+            <div class="pad-col" data-track="2"><i class="pad-led"></i><span class="pad-num">3</span><button class="pad" data-track="2"></button></div>
+            <div class="pad-col" data-track="3"><i class="pad-led"></i><span class="pad-num">4</span><button class="pad" data-track="3"></button></div>
+            <div class="pad-col" data-track="4"><i class="pad-led"></i><span class="pad-num">5</span><button class="pad" data-track="4"></button></div>
+            <div class="pad-col" data-track="5"><i class="pad-led"></i><span class="pad-num">6</span><button class="pad" data-track="5"></button></div>
+            <div class="pad-col" data-track="6"><i class="pad-led"></i><span class="pad-num">7</span><button class="pad" data-track="6"></button></div>
+            <div class="pad-col" data-track="7"><i class="pad-led"></i><span class="pad-num">8</span><button class="pad" data-track="7"></button></div>
+          </div>
+          <div class="track-state">
+            <button class="hw-btn wide" id="btn-mute"><span class="led"></span>MUTE</button>
+            <button class="hw-btn wide" id="btn-solo"><span class="led"></span>SOLO</button>
+          </div>
+        </div>
+
+        </div><!-- /main-row -->
+
+        <!-- ======================= TRANSPORT ======================= -->
+        <div class="transport" id="transport">
+          <button class="hw-btn play" id="btn-play">
+            <span class="led green"></span>
+            <span class="cap-label">PLAY</span>
+            <span class="glyph glyph-play"></span>
+          </button>
+          <button class="hw-btn stop" id="btn-stop">
+            <span class="led"></span>
+            <span class="cap-label">STOP</span>
+            <span class="glyph glyph-stop"></span>
+          </button>
+          <button class="hw-btn rec-arm" id="btn-live-rec">
+            <span class="led red"></span>
+            <span class="cap-label">LIVE REC</span>
+            <span class="glyph glyph-rec"></span>
+          </button>
+
+          <div class="hw-group" id="grp-speed">
+            <div class="group-label">SPEED</div>
+            <div class="group-row">
+              <button class="hw-mini" data-step-adj="speed" data-dir="-1">◀</button>
+              <div class="group-value" id="val-speed">1:1</div>
+              <button class="hw-mini" data-step-adj="speed" data-dir="1">▶</button>
+            </div>
+            <div class="group-icon">♩</div>
+          </div>
+
+          <div class="hw-group" id="grp-length">
+            <div class="group-label">LENGTH</div>
+            <div class="group-row">
+              <button class="hw-mini" data-step-adj="length" data-dir="-1">◀</button>
+              <div class="group-value" id="val-length">64</div>
+              <button class="hw-mini" data-step-adj="length" data-dir="1">▶</button>
+            </div>
+            <div class="group-icon">⇥</div>
+          </div>
+
+          <div class="hw-group" id="grp-swing">
+            <div class="group-label">SWING</div>
+            <div class="group-row">
+              <button class="hw-mini" data-step-adj="swing" data-dir="-1">◀</button>
+              <div class="group-value" id="val-swing">50%</div>
+              <button class="hw-mini" data-step-adj="swing" data-dir="1">▶</button>
+            </div>
+            <div class="group-icon">⌁</div>
+          </div>
+
+          <div class="knob-stack">
+            <div class="knob small" id="fx-send-knob" data-knob="send" tabindex="0" role="slider" aria-label="FX Send"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="knob-label">FX SEND</div>
+          </div>
+          <div class="knob-stack">
+            <div class="knob small" id="master-knob" data-knob="master" tabindex="0" role="slider" aria-label="Master volume"><div class="knob-top"><i class="knob-dot"></i></div><div class="knob-ridge"></div></div>
+            <div class="knob-label">MASTER</div>
+          </div>
+        </div>
+
+        <!-- ======================= FUNCTION ROW ======================= -->
+        <div class="func-row" id="func-row">
+          <button class="hw-fn" data-fn="undo" title="Undo">↶</button>
+          <button class="hw-fn" data-fn="redo" title="Redo">↷</button>
+          <button class="hw-fn" data-fn="clear-step" title="Clear step">≡</button>
+          <button class="hw-fn" data-fn="copy" title="Copy pattern">⧉</button>
+          <button class="hw-fn" data-fn="random" title="Randomise">▥</button>
+          <button class="hw-fn" data-fn="motion" title="Motion record">∿</button>
+          <button class="hw-fn" data-fn="locks" title="Parameter lock mode">◎</button>
+          <button class="hw-fn" data-fn="save" title="Save project">▤</button>
+          <button class="hw-fn" data-fn="load" title="Load">▣</button>
+          <button class="hw-fn" data-fn="export" title="Export audio">⤓</button>
+          <button class="hw-fn" data-fn="help" title="Help">?</button>
+          <button class="hw-fn" data-fn="info" title="Info">i</button>
+          <button class="hw-fn" data-fn="tap" title="Tap tempo">♩</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="rotate-hint">
+      <div class="rotate-inner">
+        <div class="rotate-icon">⟳</div>
+        <p>ROTATE TO LANDSCAPE</p>
+        <small>HYBRID GROOVEBOX is designed for landscape</small>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay hidden" aria-hidden="true">
+      <div class="overlay-panel">
+        <div class="overlay-title" id="overlay-title">LIST</div>
+        <ul class="overlay-list" id="overlay-list"></ul>
+        <div class="overlay-hint" id="overlay-hint">TURN VALUE TO SCROLL · CENTER TO SELECT · ← TO CLOSE</div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.m4a,.aif,.aiff,.ogg" hidden />
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
