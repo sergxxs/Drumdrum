@@ -185,13 +185,17 @@ and saves the same way.
 | File | Covers |
 | --- | --- |
 | `tests/audio.test.ts` | every FM/mono/sample preset is audible, notes are in tune, FM index adds sidebands, all 8 mono models differ, slice/reverse/choke behaviour, filter & pan & reverb & distortion affect the signal |
-| `tests/sequencer.test.ts` | sample-accurate grid, swing, per-track speed, track length, mute, p-locks reach the DSP and change audio, automation precedence, all trig conditions, store actions (p-lock mode, motion mode, randomise, undo) |
+| `tests/sequencer.test.ts` | sample-accurate grid, swing, per-track speed, track length, mute, p-locks reach the DSP and change audio, automation precedence, all trig conditions, song/chain advancement with repeat counts, metronome, arrangement editing, store actions |
 | `tests/storage-export.test.ts` | WAV header correctness + round-trip, 24/32-bit, transient detection, save/load/migrate, per-track export files, song export, determinism, all 8 tracks audible through the exporter |
 | `tests/worklet.test.ts` | loads the built worklet bundle, asserts silence before init, audio after, parameter messages, meter messages |
-| `tests/ui.test.ts` | the 5×7 font is complete, all 6 modes + every parameter page render visible content without filling the screen, out-of-bounds safety |
+| `tests/ui.test.ts` | the 5×7 font is complete, all 6 modes + every parameter page render visible content without filling the screen, out-of-bounds safety, choice-parameter round-tripping (filter type, LFO shape/destination) |
 
 `scripts/boot-check.mjs` additionally boots `index.html` in a real DOM (linkedom), stubs
-Web Audio, and drives every button, encoder, pad, dialog and an export.
+Web Audio, and drives every button, encoder, pad, dialog and an export — asserting that
+the FX-send and master encoders actually move state.
+
+`scripts/lcd-shots.ts` renders all 14 screens through the production page renderers to
+`docs/lcd/*.png`, so screen regressions are visible without a browser.
 
 ## 10. Project layout
 

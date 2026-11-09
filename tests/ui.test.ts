@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { getNorm, setNorm, formatValue, PARAM_DEFS } from '../src/state/params';
+import { defaultTrackParams } from '../src/state/presets';
 import { installCanvasStubs } from './support/domStub';
 import { Lcd, LCD_H, LCD_W } from '../src/ui/lcd';
 import { drawScreen } from '../src/ui/pages';
@@ -31,6 +33,40 @@ function litPixels(lcd: Lcd): number {
 }
 
 beforeAll(() => installCanvasStubs());
+
+describe('choice parameters (stored as strings)', () => {
+  it('round-trips through getNorm/setNorm for every choice parameter', () => {
+    const p = defaultTrackParams('fm');
+    for (const [key, def] of Object.entries(PARAM_DEFS)) {
+      if (!def.choices) continue;
+      for (let i = 0; i < def.choices.length; i++) {
+        const n = def.choices.length > 1 ? i / (def.choices.length - 1) : 0;
+        setNorm(p, key, n);
+        expect(getNorm(p, key), `${key} index ${i}`).toBeCloseTo(n, 5);
+        expect(formatValue(key, n)).toBe(def.choices[i]);
+      }
+    }
+  });
+
+  it('never produces NaN for a choice parameter', () => {
+    const p = defaultTrackParams('mono');
+    for (const key of ['filter.type', 'lfo.shape', 'lfo.dest', 'lfo.sync']) {
+      expect(Number.isFinite(getNorm(p, key)), key).toBe(true);
+    }
+  });
+
+  it('writes strings, which is what the DSP switches on', () => {
+    const p = defaultTrackParams('fm');
+    const choices = PARAM_DEFS['filter.type'].choices!;
+    // normalised 0..1 spans the whole table, so index 1 is 1/(len-1)
+    setNorm(p, 'filter.type', 1 / (choices.length - 1));
+    expect(typeof p.filter.type).toBe('string');
+    expect(p.filter.type).toBe(choices[1]);
+    // the top of the range is the last choice, never out of bounds
+    setNorm(p, 'filter.type', 1);
+    expect(p.filter.type).toBe(choices[choices.length - 1]);
+  });
+});
 
 describe('pixel font', () => {
   it('has a full printable ASCII set', () => {

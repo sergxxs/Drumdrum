@@ -161,11 +161,14 @@ export function fitDevice(el: HTMLElement, baseW: number, baseH: number) {
     const wideScale = Math.min((vw - 20) / baseW, (vh - 20) / baseH);
     const compact = wideScale < 0.58;
     el.classList.toggle('compact', compact);
+    // Also expose it at document level so the shell can drop the flex centring that
+    // would otherwise re-centre a full-bleed compact device.
+    document.body.classList.toggle('compact-mode', compact);
     if (compact) {
       // Re-flow to full width, then scale the natural layout down to exactly fit the
       // viewport height. Every phone therefore gets the largest legible arrangement.
       el.style.transform = 'none';
-      el.style.transformOrigin = 'top center';
+      el.style.transformOrigin = 'top left';
       el.style.width = `calc(${vw}px - 8px)`;
       el.style.height = 'auto';
       const natural = el.offsetHeight || el.getBoundingClientRect().height;

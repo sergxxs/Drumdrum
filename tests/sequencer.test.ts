@@ -321,6 +321,50 @@ describe('song mode and pattern chain', () => {
   });
 });
 
+describe('song arrangement editing', () => {
+  it('adds, re-patterns, repeats and deletes steps', () => {
+    installCanvasStubs();
+    const store = new Store();
+    const before = store.song.steps.length;
+    store.addSongStep(2);
+    expect(store.song.steps.length).toBe(before + 1);
+    const i = store.song.steps.length - 1;
+    store.setSongCursor(i);
+    expect(store.ui.songCursor).toBe(i);
+    store.setSongStepPattern(i, 1);
+    expect(store.song.steps[i].pattern).toBe(1);
+    // out-of-range patterns wrap into the project's pattern list
+    store.setSongStepPattern(i, 5);
+    expect(store.song.steps[i].pattern).toBe(5 % store.project.patterns.length);
+    store.setSongStepRepeats(i, 7);
+    expect(store.song.steps[i].repeats).toBe(7);
+    // clamps
+    store.setSongStepRepeats(i, 999);
+    expect(store.song.steps[i].repeats).toBe(64);
+    store.setSongStepRepeats(i, 0);
+    expect(store.song.steps[i].repeats).toBe(1);
+    store.removeSongStep(i);
+    expect(store.song.steps.length).toBe(before);
+  });
+
+  it('keeps the cursor inside the arrangement', () => {
+    installCanvasStubs();
+    const store = new Store();
+    store.setSongCursor(999);
+    expect(store.ui.songCursor).toBe(store.song.steps.length - 1);
+    store.setSongCursor(-5);
+    expect(store.ui.songCursor).toBe(0);
+  });
+
+  it('removing a chain step keeps the chain playable', () => {
+    installCanvasStubs();
+    const store = new Store();
+    const len = store.project.chain.length;
+    store.removeChainStep(0);
+    expect(store.project.chain.length).toBe(Math.max(1, len - 1));
+  });
+});
+
 describe('store actions', () => {
   it('toggles steps, records notes and supports undo', () => {
     installCanvasStubs();

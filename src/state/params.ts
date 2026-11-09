@@ -251,20 +251,49 @@ export function setRaw(obj: AnyObj, key: string, value: any): void {
   cur[parts[parts.length - 1]] = value;
 }
 
-/** real value -> 0..1 */
-export function valueToNorm(key: string, value: number): number {
+/**
+ * Choice parameters (filter type, LFO shape/destination, play modes...) are stored as
+ * *strings* in the model — that is what the DSP switches on. The normalised form is the
+ * index in `choices`. Everything else is a plain number.
+ */
+function choiceIndex(key: string, value: any): number | null {
   const d = PARAM_DEFS[key];
-  if (!d) return value;
+  if (!d?.choices) return null;
+  if (typeof value === 'number') return Math.round(value);
+  const i = d.choices.indexOf(String(value).toUpperCase());
+  return i < 0 ? 0 : i;
+}
+
+/** The value a parameter actually stores for a given normalised position. */
+export function normToStored(key: string, n: number): any {
+  const d = PARAM_DEFS[key];
+  if (d?.choices) {
+    const i = Math.min(d.choices.length - 1, Math.max(0, Math.round(n * (d.choices.length - 1))));
+    return d.choices[i];
+  }
+  return normToValue(key, n);
+}
+
+/** real value -> 0..1 */
+export function valueToNorm(key: string, value: any): number {
+  const d = PARAM_DEFS[key];
+  if (!d) return Number(value) || 0;
+  if (d.choices) {
+    const i = choiceIndex(key, value) ?? 0;
+    return d.choices.length > 1 ? i / (d.choices.length - 1) : 0;
+  }
+  const v = Number(value);
+  if (!Number.isFinite(v)) return 0;
   let n: number;
   if (d.exp) {
-    n = Math.log(Math.max(value, d.min) / d.min) / Math.log(d.max / d.min);
+    n = Math.log(Math.max(v, d.min) / d.min) / Math.log(d.max / d.min);
   } else {
-    n = (value - d.min) / (d.max - d.min);
+    n = (v - d.min) / (d.max - d.min);
   }
   return Math.min(1, Math.max(0, n));
 }
 
-/** 0..1 -> real value */
+/** 0..1 -> numeric value (choices return their index) */
 export function normToValue(key: string, n: number): number {
   const d = PARAM_DEFS[key];
   if (!d) return n;
@@ -281,15 +310,15 @@ export function getNorm(params: AnyObj, key: string): number {
 }
 
 export function setNorm(params: AnyObj, key: string, n: number): void {
-  setRaw(params, key, normToValue(key, n));
+  setRaw(params, key, normToStored(key, n));
 }
 
 export function formatValue(key: string, norm: number): string {
   const d = PARAM_DEFS[key];
   if (!d) return norm.toFixed(2);
+  // Choice parameters are stored as strings, so read the label straight from the table.
+  if (d.choices) return String(normToStored(key, norm));
   const v = normToValue(key, norm);
-  // Choice parameters are index-based: the stored/real value IS the index.
-  if (d.choices) return d.choices[Math.round(v)] ?? String(v);
   if (d.time) return fmtTime(v);
   if (d.fmt) return d.fmt(v);
   if (d.bipolar) {

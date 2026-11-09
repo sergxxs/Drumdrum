@@ -118,6 +118,14 @@ export class Lcd {
     }
   }
 
+  /**
+   * Mark the knob focus position with a compact bar under the label, the way the panel
+   * prints it. Cheap, unambiguous, and never collides with a glyph.
+   */
+  focusBar(x: number, y: number, w: number) {
+    this.hLine(x, y, Math.max(3, w));
+  }
+
   /** Draw text. `inverse` draws a filled bar behind the glyphs. */
   text(
     x: number, y: number, str: string,

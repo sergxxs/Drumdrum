@@ -63,6 +63,20 @@ body {
   overflow: hidden;
 }
 
+/* compact devices are full-bleed and scaled from the top edge */
+body.compact-mode {
+  align-items: flex-start;
+}
+body.compact-mode #stage {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0;
+}
+body.compact-mode .device.compact {
+  margin: 3px 4px 0;
+  transform-origin: top left !important;
+}
+
 /* --------------------------------------------------------------- device --- */
 
 .device {
@@ -554,8 +568,8 @@ body {
 .pad-bay {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 1fr 118px;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 104px 96px;
+  gap: 12px;
   align-items: center;
   padding: 8px 12px;
   border-radius: 12px;
@@ -692,9 +706,9 @@ body {
 .rec-bay {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 84px);
+  grid-template-columns: 1fr;
   align-content: center;
-  gap: 8px;
+  gap: 6px;
   padding-top: 2px;
 }
 
@@ -1077,8 +1091,16 @@ body {
   align-items: center;
 }
 
+.device.compact .pad-bay {
+  grid-template-columns: minmax(0, 1fr) 52px 62px;
+  gap: 5px;
+  padding: 5px 6px;
+}
+.device.compact .track-state {
+  gap: 4px;
+}
 .device.compact .rec-bay {
-  grid-template-columns: repeat(3, 56px);
+  grid-template-columns: 1fr;
   gap: 4px;
   padding: 0;
 }
@@ -1252,8 +1274,8 @@ body {
 
 
 .device.compact .transport {
-  grid-template-columns: 62px 58px 66px 1fr 1fr 1fr 56px 56px;
-  gap: 6px;
+  grid-template-columns: 62px 56px 64px 1fr 1fr 1fr 58px 58px;
+  gap: 5px;
 }
 
 .device.compact .hw-btn.play,
@@ -1323,6 +1345,13 @@ body {
 
 .device.compact .knob-stack {
   gap: 1px;
+  min-width: 0;
+}
+
+.device.compact .knob-stack .knob-label {
+  font-size: 6.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .device.compact .func-row {

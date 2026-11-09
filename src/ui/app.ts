@@ -520,7 +520,7 @@ export class App {
         case 'MIX': return ['volume', 'pan', 'mute', 'solo'];
         case 'SETUP': return ['masterVol', 'lcdTheme', 'clockTempo', 'click'];
         case 'FX': return ['fxChainToggle', 'fxChainMix', 'masterWidth', 'masterDrive'];
-        case 'SONG':
+        case 'SONG': return ['songAdd', 'songDelete', 'songRepeats', 'songPattern'];
         case 'KIT':
         case 'PATTERN':
         default: break;
@@ -622,6 +622,36 @@ export class App {
           if (fx) fx.mix = Math.max(0, Math.min(1, norm));
         }, { undo: false });
         audioService.setMaster({ chain: store.project.master.chain });
+        break;
+      }
+      /* ---- SONG page: the encoders edit the arrangement, not the sound ---- */
+      case 'songAdd':
+        if (norm > 0.5) {
+          store.addSongStep(store.project.currentPattern);
+          store.setSongCursor(store.song.steps.length - 1);
+          this.toast(`ADDED P${store.project.currentPattern + 1}`);
+        }
+        break;
+      case 'songDelete':
+        if (norm > 0.5) {
+          store.removeSongStep(store.ui.songCursor);
+          this.toast('STEP DELETED');
+        }
+        break;
+      case 'songRepeats': {
+        const step = store.song.steps[store.ui.songCursor];
+        if (step) {
+          store.setSongStepRepeats(store.ui.songCursor, 1 + Math.round(norm * 16));
+          this.toast(`REPEATS ${store.song.steps[store.ui.songCursor].repeats}`);
+        }
+        break;
+      }
+      case 'songPattern': {
+        const step = store.song.steps[store.ui.songCursor];
+        if (step) {
+          store.setSongStepPattern(store.ui.songCursor, Math.round(norm * 16));
+          this.toast(`PATTERN ${store.song.steps[store.ui.songCursor].pattern + 1}`);
+        }
         break;
       }
       case 'masterWidth':
@@ -841,6 +871,8 @@ export class App {
         } else if (this.screen.kind === 'mode' && this.screen.name === 'FX') {
           const n = store.project.master.chain.length;
           store.ui.fxRow = ((store.ui.fxRow - 1) % n + n) % n;
+        } else if (this.screen.kind === 'mode' && this.screen.name === 'SONG') {
+          store.setSongCursor(store.ui.songCursor - 1);
         } else {
           store.setCursor(store.ui.cursor - 1);
         }
@@ -850,6 +882,8 @@ export class App {
           this.dialogs.move(1);
         } else if (this.screen.kind === 'mode' && this.screen.name === 'FX') {
           store.ui.fxRow = (store.ui.fxRow + 1) % store.project.master.chain.length;
+        } else if (this.screen.kind === 'mode' && this.screen.name === 'SONG') {
+          store.setSongCursor(store.ui.songCursor + 1);
         } else {
           store.setCursor(store.ui.cursor + 1);
         }
@@ -925,9 +959,11 @@ export class App {
       this.invalidate();
       return;
     }
-    // SONG / SETUP / FX pages use the value knob for tempo etc.
+    // SONG page: the value encoder scrubs the arrangement like a hardware track list
     if (mode === 'SONG') {
-      this.openSongDialog();
+      if (Math.abs(delta) >= 0.5) {
+        store.setSongCursor(store.ui.songCursor + (delta > 0 ? 1 : -1));
+      }
       return;
     }
     // parameter pages: value knob also edits the focused param (hardware behaviour)
@@ -1473,6 +1509,10 @@ export class App {
       case 'click': return store.project.settings.click ? 1 : 0;
       case 'fxChainToggle': return store.project.master.chain[store.ui.fxRow]?.on ? 1 : 0;
       case 'fxChainMix': return store.project.master.chain[store.ui.fxRow]?.mix ?? 0.5;
+      case 'songAdd': return 0;
+      case 'songDelete': return 0;
+      case 'songRepeats': return (store.song.steps[store.ui.songCursor]?.repeats ?? 1) / 16;
+      case 'songPattern': return (store.song.steps[store.ui.songCursor]?.pattern ?? 0) / 16;
       case 'masterWidth': return store.project.master.width / 2;
       case 'masterDrive': return store.project.master.drive;
       default: return getNorm(store.track, key);
@@ -1548,12 +1588,14 @@ export class App {
 const VIRTUAL_KEYS = new Set([
   'mute', 'solo', 'masterVol', 'lcdTheme', 'clockTempo', 'click',
   'fxChainToggle', 'fxChainMix', 'masterWidth', 'masterDrive',
+  'songAdd', 'songDelete', 'songRepeats', 'songPattern',
 ]);
 
 const VIRTUAL_LABELS: Record<string, string> = {
   mute: 'MUTE', solo: 'SOLO', masterVol: 'MASTER', lcdTheme: 'LCD',
   clockTempo: 'TEMPO', click: 'CLICK', fxChainToggle: 'ON', fxChainMix: 'MIX',
   masterWidth: 'WIDTH', masterDrive: 'DRIVE',
+  songAdd: 'ADD STEP', songDelete: 'DELETE', songRepeats: 'REPEATS', songPattern: 'PATTERN',
 };
 
 function readPath(obj: any, key: string): number {

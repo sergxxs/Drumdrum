@@ -40,6 +40,8 @@ export interface UiState {
   playing: boolean;
   /** selected row in the master FX insert chain */
   fxRow: number;
+  /** selected arrangement step on the SONG page */
+  songCursor: number;
   /** metronome */
   click: boolean;
   tempoDrag: boolean;
@@ -86,6 +88,7 @@ export class Store {
       fill: false,
       playing: false,
       fxRow: 0,
+      songCursor: 0,
       click: this.project.settings?.click ?? false,
       tempoDrag: false,
       exporting: null,
@@ -572,6 +575,49 @@ export class Store {
     this.update(() => {
       this.project.chain.push(patternIndex);
     });
+  }
+
+  removeChainStep(index: number) {
+    if (this.project.chain.length <= 1) return;
+    this.update(() => {
+      this.project.chain.splice(index, 1);
+    });
+  }
+
+  /** Append an arrangement step for the given pattern. */
+  addSongStep(patternIndex: number) {
+    this.update(() => {
+      this.song.steps.push({ pattern: patternIndex, repeats: 1 });
+    });
+  }
+
+  removeSongStep(index: number) {
+    if (!this.song.steps[index]) return;
+    this.update(() => {
+      this.song.steps.splice(index, 1);
+    });
+  }
+
+  setSongStepPattern(index: number, patternIndex: number) {
+    const s = this.song.steps[index];
+    if (!s) return;
+    this.update(() => {
+      s.pattern = ((patternIndex % this.project.patterns.length) + this.project.patterns.length)
+        % this.project.patterns.length;
+    });
+  }
+
+  setSongStepRepeats(index: number, repeats: number) {
+    const s = this.song.steps[index];
+    if (!s) return;
+    this.update(() => {
+      s.repeats = Math.max(1, Math.min(64, Math.round(repeats)));
+    });
+  }
+
+  setSongCursor(index: number) {
+    this.ui.songCursor = Math.max(0, Math.min(this.song.steps.length - 1, index));
+    this.emit();
   }
 
   /* ------------------------------------------------------------------ setup --- */

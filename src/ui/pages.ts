@@ -79,9 +79,11 @@ function slider(
   const def = PARAM_DEFS[key];
   const label = (opts.label ?? def?.label ?? key).slice(0, 4);
   lcd.text(x, y, label);
-  if (opts.focus) lcd.text(x + 25, y, '▶');
-  if (opts.locked) lcd.text(x + 34, y, '\u00a7');
-  else if (opts.automated) lcd.text(x + 34, y, '~');
+  // focus marker sits in the label gutter as a solid bar, never as a glyph that would
+  // collide with the value text on the right
+  if (opts.focus) lcd.focusBar(x + 24, y + 3, 3);
+  if (opts.locked) lcd.text(x + 30, y, '\u00a7');
+  else if (opts.automated) lcd.text(x + 30, y, '~');
   lcd.textRight(x + w, y, formatValue(key, norm));
   lcd.valueBar(x, y + 8, w - 30, norm, { bipolar: !!def?.bipolar, h: 5 });
 }
@@ -98,7 +100,7 @@ function drawFxMode(lcd: Lcd, store: Store, status: Status, selRow = 0) {
   chain.slice(0, 6).forEach((fx, i) => {
     const y = 12 + i * 8;
     const isSel = i === selRow % Math.max(1, chain.length);
-    if (isSel) lcd.ditherRect(0, y - 1, 120, 8);
+    if (isSel) lcd.rect(0, y - 2, 122, 9);
     lcd.text(2, y, String(i + 1));
     lcd.text(10, y, fx.type.padEnd(5, ' ').slice(0, 5));
     lcd.box(44, y, fx.on, 6);
@@ -141,7 +143,7 @@ function drawPattern(lcd: Lcd, store: Store, status: Status) {
   );
 
   const rowH = 8;
-  const gridX = 56;
+  const gridX = 60;
   const cellW = 8;
   const cellInner = 6;
   for (let t = 0; t < 8; t++) {
@@ -149,14 +151,15 @@ function drawPattern(lcd: Lcd, store: Store, status: Status) {
     const tp = pat.tracks[t];
     const p = store.trackParams(t);
     const isCur = t === store.project.currentTrack;
-    if (isCur) lcd.ditherRect(0, y - 1, LCD_W, rowH);
+    if (isCur) lcd.fillRect(0, y - 2, LCD_W, rowH + 1);
     // track number, current marker, mute flag, name, engine tag
-    lcd.text(1, y, String(t + 1));
-    if (isCur) lcd.text(7, y, '▶');
-    if (tp.muted || p.mute) lcd.text(7, y, 'M');
-    else if (p.solo) lcd.text(7, y, 'S');
-    lcd.text(14, y, store.kit.tracks[t].name.slice(0, 4));
-    lcd.text(38, y, trackTag(p));
+    lcd.text(1, y, String(t + 1), { inverse: isCur });
+    if (isCur) lcd.text(7, y, '▶', { inverse: true });
+    if (tp.muted || p.mute) lcd.text(7, y, 'M', { inverse: isCur });
+    else if (p.solo) lcd.text(7, y, 'S', { inverse: isCur });
+    lcd.text(14, y, store.kit.tracks[t].name.slice(0, 4), { inverse: isCur });
+    // engine tag (2 chars) in its own column so the name never collides with it
+    lcd.text(40, y, trackTag(p), { inverse: isCur });
     // steps
     for (let i = 0; i < viewSteps; i++) {
       const stepIndex = pageStart + i;
@@ -208,10 +211,11 @@ function drawKit(lcd: Lcd, store: Store, status: Status) {
     const y = 11 + t * rowH;
     const p = store.trackParams(t);
     const isCur = t === store.project.currentTrack;
-    if (isCur) lcd.ditherRect(0, y - 1, LCD_W, rowH);
-    lcd.text(1, y, String(t + 1));
-    lcd.text(8, y, store.kit.tracks[t].name.slice(0, 8));
-    lcd.text(60, y, trackTag(p));
+    // Hardware-style selection: a solid bar with the row knocked out of it.
+    if (isCur) lcd.fillRect(0, y - 2, LCD_W, rowH + 1);
+    lcd.text(1, y, String(t + 1), { inverse: isCur });
+    lcd.text(8, y, store.kit.tracks[t].name.slice(0, 8), { inverse: isCur });
+    lcd.text(60, y, trackTag(p), { inverse: isCur });
     // engine detail line
     let detail = '';
     if (p.engine === 'fm') detail = `${FM_ALGOS[Math.round(p.fm.algorithm)].name} I${Math.round(p.fm.index * 100)}`;
@@ -237,7 +241,8 @@ function drawSong(lcd: Lcd, store: Store, status: Status) {
   const song = store.song;
   header(lcd, store, `SONG ${song.name}`, status.playing ? 'PLAYING' : 'STOPPED');
   lcd.text(2, 12, 'CHAIN');
-  let x = 2;
+  // chips start after the label so they never overdraw it
+  let x = 2 + 'CHAIN'.length * 6 + 3;
   for (let i = 0; i < store.project.chain.length && i < 12; i++) {
     const idx = store.project.chain[i];
     const label = `P${String(idx + 1).padStart(2, '0')}`;
@@ -245,16 +250,24 @@ function drawSong(lcd: Lcd, store: Store, status: Status) {
     if (x + w > LCD_W - 2) break;
     lcd.rect(x, 11, w, 9);
     lcd.text(x + 2, 12, label);
-    x += w + 2;
+    x += w + 3;
   }
   lcd.text(2, 26, 'SONG ARRANGE');
+  if (song.steps.length === 0) {
+    lcd.text(4, 38, 'EMPTY  A:ADD STEP');
+  }
   for (let i = 0; i < song.steps.length && i < 5; i++) {
     const y = 36 + i * 9;
     const s = song.steps[i];
+    // cursor: an outline, drawn before the text so it never erases the row
+    if (i === store.ui.songCursor) lcd.rect(0, y - 1, LCD_W, 9);
     lcd.text(4, y, `${i + 1}. P${String(s.pattern + 1).padStart(2, '0')} x${s.repeats}`);
-    lcd.valueBar(70, y, 60, Math.min(1, s.repeats / 8), { h: 5 });
+    // bar length is the real arrangement duration in bars, not a made-up scale
+    const bars = s.repeats * store.pattern.length / 4;
+    lcd.valueBar(70, y, 46, Math.min(1, bars / 32), { h: 5 });
+    lcd.textRight(148, y, `${bars.toFixed(0)}BAR`);
   }
-  footer(lcd, 'A:ADD STEP  C:REPEATS  D:LOOP', store.project.chainLoop ? 'LOOP' : '');
+  footer(lcd, 'A:ADD  B:DEL  C:REPEATS  D:LOOP', store.project.chainLoop ? 'LOOP' : 'ONCE');
 }
 
 /* -------------------------------------------------------------------- MIX --- */
@@ -597,10 +610,11 @@ function drawAmpEnv(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h
 
 function drawLfo(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h: number) {
   const l = p.lfo;
-  lcd.text(x, y, `${l.shape} ${l.sync ? 'SYNC' : `${l.speed.toFixed(1)}HZ`}`);
-  lcd.text(x, y + 7, `${l.dest} ${Math.round(l.depth * 100)}%`);
-  const top = y + 16;
-  const gh = h - 18;
+  // One line of context, then the waveform. Values live in the sliders on the left, so
+  // repeating them here would only create conflicting readouts.
+  lcd.text(x, y, `${l.shape} ${l.sync ? 'SYNC' : 'FREE'} > ${l.dest}`);
+  const top = y + 12;
+  const gh = h - 14;
   lcd.rect(x, top, w, gh);
   const mid = top + Math.floor(gh / 2);
   const amp = (gh / 2 - 2) * Math.max(0.05, l.depth);
@@ -618,26 +632,25 @@ function drawLfo(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h: n
     }
     lcd.px(x + 1 + i, mid - Math.round(v * amp));
   }
-  lcd.hLine(x + 1, mid, w - 2);
 }
 
 function drawFxVisual(lcd: Lcd, store: Store, p: TrackParams, x: number, y: number, w: number, h: number) {
-  lcd.text(x, y, 'SEND LEVELS');
-  const rows: [string, number][] = [
-    ['DELAY', p.sendA],
-    ['REVERB', p.sendB],
-    ['DIST', p.fx.distortion],
-    ['MOD', p.fx.mod],
-  ];
-  rows.forEach(([label, v], i) => {
-    const yy = y + 10 + i * 9;
-    lcd.text(x, yy, label);
-    lcd.valueBar(x + 38, yy + 1, w - 38, v, { h: 5 });
-  });
   const m = store.project.master;
-  const chainOn = m.chain.filter((c) => c.on).map((c) => c.type);
-  lcd.text(x, y + h - 10, `${m.compOn ? 'COMP' : '----'} ${chainOn.length ? chainOn.join('+').slice(0, 10) : ''}`);
-  lcd.text(x, y + h - 3, `MAS ${Math.round(m.volume * 100)} DRV ${Math.round(m.drive * 100)}`);
+  lcd.text(x, y, 'SENDS');
+  // single-character tags keep the 80px column readable
+  const rows: [string, number][] = [['D', p.sendA], ['R', p.sendB]];
+  rows.forEach(([label, v], i) => {
+    const yy = y + 9 + i * 9;
+    lcd.text(x, yy, label);
+    lcd.valueBar(x + 8, yy + 1, w - 8, v, { h: 5 });
+  });
+  // master insert chain: which effects are live, in order
+  // Master insert chain as a bypass map: B = engaged, D = disengaged. One glyph per
+  // slot keeps the whole chain visible and is unmistakable next to the width readout.
+  const chainCode = m.chain.map((c) => (c.on ? 'B' : 'D')).join('');
+  lcd.text(x, y + 28, `FX ${chainCode}`);
+  lcd.text(x, y + 37, m.compOn ? 'COMP ON' : 'COMP --');
+  lcd.text(x, y + 46, `WID ${Math.round(m.width * 100)}`);
 }
 
 function drawModVisual(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h: number) {
