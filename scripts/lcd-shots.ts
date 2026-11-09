@@ -9,6 +9,7 @@ import { Lcd, LCD_W, LCD_H } from '../src/ui/lcd';
 import { drawScreen } from '../src/ui/pages';
 import type { Screen, Status } from '../src/ui/pages';
 import { Store } from '../src/state/store';
+import { buildFactorySamples } from '../src/audio/sample';
 
 installCanvasStubs();
 
@@ -62,6 +63,9 @@ function png(w: number, h: number, rgb: Uint8Array, scale: number): Buffer {
 
 const lcd = new Lcd(new StubCanvas() as unknown as HTMLCanvasElement);
 const store = new Store();
+// the real app registers the synthesised factory samples at boot; do the same so the
+// SAMPLE page renders with an actual sample loaded
+for (const s of buildFactorySamples(44100)) store.addSampleMeta(s.meta);
 const status: Status = {
   playing: true,
   steps: [0, 4, 8, 12, 2, 6, 10, 14],

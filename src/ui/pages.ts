@@ -77,13 +77,13 @@ function slider(
   opts: { focus?: boolean; locked?: boolean; automated?: boolean; label?: string } = {},
 ) {
   const def = PARAM_DEFS[key];
-  const label = (opts.label ?? def?.label ?? key).slice(0, 4);
-  lcd.text(x, y, label);
-  // focus marker sits in the label gutter as a solid bar, never as a glyph that would
-  // collide with the value text on the right
-  if (opts.focus) lcd.focusBar(x + 24, y + 3, 3);
-  if (opts.locked) lcd.text(x + 30, y, '\u00a7');
-  else if (opts.automated) lcd.text(x + 30, y, '~');
+  const label = (opts.label ?? def?.label ?? key).slice(0, 4).padEnd(4, ' ');
+  // Focus is shown the way the hardware shows it: the label is knocked out of a solid
+  // bar. No extra glyph is added, so nothing can be mistaken for part of the label.
+  if (opts.focus) lcd.inverseText(x, y, label, 2, 1);
+  else lcd.text(x, y, label);
+  if (opts.locked) lcd.text(x + 31, y, '\u00a7');
+  else if (opts.automated) lcd.text(x + 31, y, '~');
   lcd.textRight(x + w, y, formatValue(key, norm));
   lcd.valueBar(x, y + 8, w - 30, norm, { bipolar: !!def?.bipolar, h: 5 });
 }
@@ -143,7 +143,7 @@ function drawPattern(lcd: Lcd, store: Store, status: Status) {
   );
 
   const rowH = 8;
-  const gridX = 60;
+  const gridX = 56;
   const cellW = 8;
   const cellInner = 6;
   for (let t = 0; t < 8; t++) {
@@ -151,15 +151,14 @@ function drawPattern(lcd: Lcd, store: Store, status: Status) {
     const tp = pat.tracks[t];
     const p = store.trackParams(t);
     const isCur = t === store.project.currentTrack;
-    if (isCur) lcd.fillRect(0, y - 2, LCD_W, rowH + 1);
-    // track number, current marker, mute flag, name, engine tag
-    lcd.text(1, y, String(t + 1), { inverse: isCur });
-    if (isCur) lcd.text(7, y, '▶', { inverse: true });
-    if (tp.muted || p.mute) lcd.text(7, y, 'M', { inverse: isCur });
-    else if (p.solo) lcd.text(7, y, 'S', { inverse: isCur });
-    lcd.text(14, y, store.kit.tracks[t].name.slice(0, 4), { inverse: isCur });
-    // engine tag (2 chars) in its own column so the name never collides with it
-    lcd.text(40, y, trackTag(p), { inverse: isCur });
+    // selection bar: only behind the label column, so the step grid stays readable.
+    // Shape: "1▶NAME" (number, play marker or M/S flag, name) then the engine tag.
+    // PATTERN rows are label-only (the engine tag lives on KIT/SOUND), which keeps the
+    // step grid wide and matches the hardware's pattern screen.
+    const flag = tp.muted || p.mute ? 'M' : p.solo ? 'S' : isCur ? '\u25b6' : ' ';
+    const label = `${t + 1}${flag} ${store.kit.tracks[t].name.slice(0, 5)}`;
+    if (isCur) lcd.inverseText(1, y, label, 2, 1);
+    else lcd.text(1, y, label);
     // steps
     for (let i = 0; i < viewSteps; i++) {
       const stepIndex = pageStart + i;
@@ -212,10 +211,12 @@ function drawKit(lcd: Lcd, store: Store, status: Status) {
     const p = store.trackParams(t);
     const isCur = t === store.project.currentTrack;
     // Hardware-style selection: a solid bar with the row knocked out of it.
-    if (isCur) lcd.fillRect(0, y - 2, LCD_W, rowH + 1);
-    lcd.text(1, y, String(t + 1), { inverse: isCur });
-    lcd.text(8, y, store.kit.tracks[t].name.slice(0, 8), { inverse: isCur });
-    lcd.text(60, y, trackTag(p), { inverse: isCur });
+    if (isCur) lcd.inverseText(1, y, ` ${t + 1} ${store.kit.tracks[t].name.slice(0, 8).padEnd(8, ' ')}`, 2, 1);
+    else {
+      lcd.text(1, y, String(t + 1));
+      lcd.text(8, y, store.kit.tracks[t].name.slice(0, 8));
+    }
+    lcd.text(60, y, trackTag(p));
     // engine detail line
     let detail = '';
     if (p.engine === 'fm') detail = `${FM_ALGOS[Math.round(p.fm.algorithm)].name} I${Math.round(p.fm.index * 100)}`;
@@ -314,33 +315,41 @@ function drawMix(lcd: Lcd, store: Store, status: Status) {
 /* ---------------------------------------------------------------- SETUP ----- */
 
 function drawSetup(lcd: Lcd, store: Store, status: Status) {
-  header(lcd, store, 'SETUP', status.audio.toUpperCase());
+  header(lcd, store, 'SETUP', status.host === 'WORKLET' ? 'DSP' : 'FALLBACK');
+  const st = store.project.settings;
+  // Left column reports real engine state; "LCD" now reports the actual contrast value
+  // that the renderer uses instead of the name of the page you are on.
   const rows: [string, string][] = [
     ['HOST', status.host],
-    ['AUDIO', status.audio === 'running' ? `RUN ${store.project.settings.masterVol.toFixed(2)}` : status.audio.toUpperCase()],
-    ['CLICK', store.project.settings.click ? 'ON' : 'OFF'],
-    ['AUTOSAVE', store.project.settings.autosave ? 'ON' : 'OFF'],
-    ['QUANTISE', store.project.settings.recQuant ? `1/${store.project.settings.recQuant}` : 'OFF'],
-    ['MIDI CH', String(store.project.settings.midiCh)],
-    ['LCD', store.ui.page === 'sample' ? 'SAMPLE' : 'CONTRAST'],
+    ['AUDIO', status.audio.toUpperCase()],
+    ['CLICK', st.click ? 'ON' : 'OFF'],
+    ['AUTOSAVE', st.autosave ? 'ON' : 'OFF'],
+    ['QUANTISE', st.recQuant ? `1/${st.recQuant}` : 'OFF'],
+    ['MIDI CH', String(st.midiCh)],
+    ['CONTRAST', String(Math.round(st.contrast * 100))],
     ['SAMPLES', String(store.samples.size)],
   ];
   rows.forEach(([k, v], i) => {
     const y = 11 + i * 8;
     lcd.text(2, y, k);
-    lcd.textRight(90, y, v);
+    lcd.textRight(86, y, v);
   });
-  // master meters right side
-  const mx = 104;
+  // master output meters on the right
+  const mx = 96;
   lcd.text(mx, 11, 'OUT L/R');
   for (let i = 0; i < 2; i++) {
     const v = i === 0 ? status.masterL : status.masterR;
-    lcd.valueBar(mx, 20 + i * 8, 84, Math.min(1, v * 1.4), { h: 6 });
+    lcd.valueBar(mx, 20 + i * 8, 92, Math.min(1, v * 1.4), { h: 6 });
   }
-  lcd.text(mx, 40, 'CLOCK');
-  lcd.text(mx, 48, `${(status.frames / 44100).toFixed(1)}S`);
-  lcd.text(mx, 56, `TEMPO ${store.pattern.tempo.toFixed(1)}`);
-  footer(lcd, 'C:TEMPO D:METRONOME', 'PAGE ↕');
+  // transport readout: bars:beats from the engine frame counter, not wall clock
+  const p = store.pattern;
+  const beats = (status.frames / 44100) * (p.tempo / 60);
+  const bar = Math.floor(beats / 4) + 1;
+  const beat = Math.floor(beats % 4) + 1;
+  lcd.text(mx, 40, `POS ${bar}.${beat}`);
+  lcd.text(mx, 48, `${p.tempo.toFixed(1)}BPM`);
+  lcd.text(mx, 56, `${Math.round(44100 / 100) / 10}KHZ`);
+  footer(lcd, 'C:TEMPO D:CLICK', 'A:HELP');
 }
 
 /* ------------------------------------------------------------- PARAM PAGES --- */
@@ -478,7 +487,8 @@ function drawFMVisual(lcd: Lcd, p: TrackParams, x: number, y: number, w: number,
 function drawMonoVisual(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h: number) {
   const info = MONO_ENGINE_INFO[p.mono.engine];
   lcd.text(x, y, info.name);
-  lcd.text(x, y + 7, info.blurb.slice(0, 20));
+  // clip the blurb to the column: 6px per glyph, never past the LCD edge
+  lcd.text(x, y + 7, info.blurb.slice(0, Math.floor((LCD_W - x - 2) / 6)));
   const mid = y + 30 + Math.floor((h - 30) / 2);
   const innerH = Math.floor((h - 34) / 2);
   lcd.rect(x, y + 28, w, h - 30);
@@ -531,7 +541,7 @@ function drawSampleVisual(
   const meta = s.sampleId ? store.samples.get(s.sampleId) : null;
   lcd.text(x, y, (meta?.name ?? 'NO SAMPLE').slice(0, 14));
   const waveY = y + 9;
-  const waveH = h - (detailed ? 26 : 18);
+  const waveH = h - (detailed ? 36 : 18);
   lcd.rect(x, waveY, w, waveH);
   if (!meta) {
     lcd.text(x + 6, waveY + Math.floor(waveH / 2) - 3, 'LOAD SAMPLE');
@@ -567,9 +577,14 @@ function drawSampleVisual(
     }
   }
   if (detailed) {
-    lcd.text(x, waveY + waveH + 2, s.loopMode === 'off' ? '1SHOT' : s.loopMode === 'forward' ? 'LOOP' : 'PING');
-    lcd.text(x + 34, waveY + waveH + 2, s.reverse ? 'REV' : 'FWD');
-    lcd.textRight(x + w, waveY + waveH + 2, `${s.slices}SL ${s.pitch >= 0 ? '+' : ''}${s.pitch}ST`);
+    // Two short lines instead of one crowded one: play mode / direction / slices, then
+    // the pitch in semitones. Nothing is truncated or overlapped.
+    // The info column is 13 characters wide, so each line must fit on its own.
+    const row1 = waveY + waveH + 2;
+    const mode = s.loopMode === 'off' ? '1SHOT' : s.loopMode === 'forward' ? 'LOOP' : 'PING';
+    lcd.text(x, row1, `${mode} ${s.reverse ? 'REV' : 'FWD'}`);
+    const dur = meta.frames / meta.sampleRate;
+    lcd.text(x, row1 + 9, `${s.pitch >= 0 ? '+' : ''}${s.pitch}ST ${dur < 1 ? `${Math.round(dur * 1000)}MS` : `${dur.toFixed(2)}S`}`);
   }
 }
 
@@ -655,15 +670,23 @@ function drawFxVisual(lcd: Lcd, store: Store, p: TrackParams, x: number, y: numb
 
 function drawModVisual(lcd: Lcd, p: TrackParams, x: number, y: number, w: number, h: number) {
   const keys = ENGINE_PAGES[p.engine].mod;
-  lcd.text(x, y, 'MODULATION');
-  keys.forEach((k, i) => {
-    const yy = y + 11 + i * 11;
-    lcd.text(x, yy, (PARAM_DEFS[k]?.label ?? '').slice(0, 7));
-    lcd.valueBar(x + 42, yy + 1, w - 42, getNorm(p, k), {
-      h: 6, bipolar: !!PARAM_DEFS[k]?.bipolar,
-    });
+  // The four macros are already on the left as sliders, so this column shows what they
+  // feed: the modulation routing, as a source -> destination list.
+  lcd.text(x, y, 'ROUTING');
+  const rows: [string, string][] = [
+    ['P.ENV', 'PITCH'],
+    ['P.DEC', 'PITCH'],
+    ['LFO', p.lfo.dest],
+    ['VEL', 'LEVEL'],
+  ];
+  rows.forEach(([src, dst], i) => {
+    const yy = y + 11 + i * 9;
+    lcd.text(x, yy, src);
+    lcd.text(x + 36, yy, '>');
+    lcd.text(x + 44, yy, dst);
   });
-  lcd.text(x, y + h - 8, `LFO→${p.lfo.dest}`);
+  const amount = Math.round(p.lfo.depth * 100);
+  lcd.text(x, y + h - 8, `LFO ${amount}% ${p.lfo.shape}`);
 }
 
 /* ------------------------------------------------------- page strip helper --- */

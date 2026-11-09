@@ -123,7 +123,31 @@ export class Lcd {
    * prints it. Cheap, unambiguous, and never collides with a glyph.
    */
   focusBar(x: number, y: number, w: number) {
-    this.hLine(x, y, Math.max(3, w));
+    // A filled triangle pointing at the focused label, the panel's own cue.
+    const n = Math.max(3, w);
+    for (let i = 0; i < n; i++) this.hLine(x, y + i - Math.floor(n / 2), n - i);
+  }
+
+  /**
+   * Draw text knocked out of a solid bar. Uses `unpx` for the glyphs so the bar can be
+   * exactly one pixel wider than the string on every side and the letters stay crisp.
+   */
+  inverseText(x: number, y: number, str: string, padX = 2, padY = 2) {
+    const s = str.toUpperCase();
+    const w = s.length * (GLYPH_W + 1) - 1;
+    this.fillRect(x - padX, y - padY, w + padX * 2, GLYPH_H + padY * 2);
+    let cx = x;
+    for (let i = 0; i < s.length; i++) {
+      const g = glyph(s[i]);
+      for (let r = 0; r < GLYPH_H; r++) {
+        const bits = g[r];
+        if (!bits) continue;
+        for (let c = 0; c < GLYPH_W; c++) {
+          if (bits & (1 << (GLYPH_W - 1 - c))) this.unpx(cx + c, y + r);
+        }
+      }
+      cx += GLYPH_W + 1;
+    }
   }
 
   /** Draw text. `inverse` draws a filled bar behind the glyphs. */
