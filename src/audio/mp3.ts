@@ -19,14 +19,26 @@ declare global {
 
 let loading: Promise<void> | null = null;
 
+/** The encoder is pulled in from a classic script tag, so it lives on the global. */
+function lameGlobal(): Window['lamejs'] | undefined {
+  if (typeof window !== 'undefined' && window.lamejs) return window.lamejs;
+  const g = globalThis as unknown as { lamejs?: Window['lamejs'] };
+  return g.lamejs;
+}
+
 export function loadLame(): Promise<void> {
-  if (window.lamejs) return Promise.resolve();
+  if (lameGlobal()) return Promise.resolve();
   if (loading) return loading;
+  // No DOM (tests, offline tooling): fail with a clear message instead of throwing on
+  // `window`, and let callers fall back to WAV.
+  if (typeof document === 'undefined') {
+    return Promise.reject(new Error('MP3 encoding needs a browser environment'));
+  }
   loading = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = './vendor/lame.all.js';
     s.async = true;
-    s.onload = () => (window.lamejs ? resolve() : reject(new Error('LAME failed to initialise')));
+    s.onload = () => (lameGlobal() ? resolve() : reject(new Error('LAME failed to initialise')));
     s.onerror = () => reject(new Error('Could not load the MP3 encoder'));
     document.head.appendChild(s);
   });
@@ -53,7 +65,7 @@ export async function encodeMp3(
   onProgress?: (p: number) => void,
 ): Promise<Blob> {
   await loadLame();
-  const lame = window.lamejs;
+  const lame = lameGlobal();
   if (!lame) throw new Error('MP3 encoder unavailable');
   const enc = new lame.Mp3Encoder(2, sampleRate, kbps);
   const frames = Math.min(left.length, right.length);
