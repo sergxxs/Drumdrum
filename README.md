@@ -13,7 +13,7 @@ The test suite proves it: 66 tests render audio and assert on the samples.
 npm install
 npm run dev        # http://localhost:5173  (dev server, rebuilds the worklet on change)
 npm run build      # production build -> dist/
-npm test           # 78 audio / sequencer / storage / export / UI tests
+npm test           # 81 audio / sequencer / storage / export / UI tests
 npm run smoke      # headless render of the factory project, prints per-track levels
 node scripts/boot-check.mjs              # boots the app headlessly and drives every control
 npx vite-node scripts/demo-export.ts     # renders docs/demo/factory-pattern.mp3
@@ -196,7 +196,7 @@ and saves the same way.
 | --- | --- |
 | `tests/audio.test.ts` | every FM/mono/sample preset is audible, notes are in tune, FM index adds sidebands, all 8 mono models differ, slice/reverse/choke behaviour, filter & pan & reverb & distortion affect the signal |
 | `tests/sequencer.test.ts` | sample-accurate grid, swing, per-track speed, track length, mute, p-locks reach the DSP and change audio, automation precedence, all trig conditions, song/chain advancement with repeat counts, metronome, arrangement editing, store actions |
-| `tests/storage-export.test.ts` | WAV header correctness + round-trip, 24/32-bit, transient detection, save/load/migrate, per-track export files, song export, determinism, all 8 tracks audible through the exporter, every master insert measurably processes audio, mono/wide width correlation |
+| `tests/storage-export.test.ts` | WAV header correctness + round-trip, 8/16/24/32-bit import against hand-built RIFF files, malformed-file rejection, transient detection, save/load/migrate, per-track export files, song export, determinism, all 8 tracks audible through the exporter, every master insert measurably processes audio, mono/wide width correlation |
 | `tests/worklet.test.ts` | loads the built worklet bundle, asserts silence before init, audio after, parameter messages, meter messages |
 | `tests/ui.test.ts` | the 5×7 font is complete, all 6 modes + every parameter page render visible content without filling the screen, out-of-bounds safety, choice-parameter round-tripping (filter type, LFO shape/destination) |
 

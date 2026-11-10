@@ -22,6 +22,70 @@ beforeAll(() => {
   };
 });
 
+describe('WAV import', () => {
+  /** Build a RIFF/WAVE file by hand so the decoder is tested against the spec, not our encoder. */
+  function makeWav(bits: number, channels: number, frames: number, value: (i: number, c: number) => number) {
+    const bps = bits / 8;
+    const size = frames * channels * bps;
+    const ab = new ArrayBuffer(44 + size);
+    const dv = new DataView(ab);
+    const put = (o: number, s: string) => [...s].forEach((ch, i) => dv.setUint8(o + i, ch.charCodeAt(0)));
+    put(0, 'RIFF'); dv.setUint32(4, 36 + size, true); put(8, 'WAVE'); put(12, 'fmt ');
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, channels, true);
+    dv.setUint32(24, 44100, true); dv.setUint32(28, 44100 * channels * bps, true);
+    dv.setUint16(32, channels * bps, true); dv.setUint16(34, bits, true);
+    put(36, 'data'); dv.setUint32(40, size, true);
+    let o = 44;
+    for (let i = 0; i < frames; i++) {
+      for (let c = 0; c < channels; c++) {
+        const v = value(i, c);
+        if (bits === 8) dv.setUint8(o, Math.round((v + 1) * 127.5));
+        else if (bits === 16) dv.setInt16(o, Math.round(v * 32767), true);
+        else if (bits === 24) {
+          const q = Math.round(v * 8388607);
+          dv.setUint8(o, q & 255); dv.setUint8(o + 1, (q >> 8) & 255); dv.setUint8(o + 2, (q >> 16) & 255);
+        } else dv.setInt32(o, Math.round(v * 2147483647), true);
+        o += bps;
+      }
+    }
+    return ab;
+  }
+  const sine = (i: number) => Math.sin((2 * Math.PI * 440 * i) / 44100) * 0.5;
+
+  it('decodes 8/16/24/32-bit PCM at the right level and channel count', () => {
+    for (const bits of [8, 16, 24, 32]) {
+      for (const ch of [1, 2]) {
+        const dec = decodeWav(makeWav(bits, ch, 500, (i, c) => sine(i) * (c === 0 ? 1 : 0.5)));
+        expect(dec.left.length, `${bits}-bit ${ch}ch`).toBe(500);
+        expect(dec.sampleRate).toBe(44100);
+        const peak = Math.max(...Array.from(dec.left, Math.abs));
+        expect(peak, `${bits}-bit ${ch}ch peak`).toBeGreaterThan(0.45);
+        expect(peak, `${bits}-bit ${ch}ch peak`).toBeLessThan(0.56);
+        if (ch === 1) expect(dec.right).toBeNull();
+        else expect(dec.right?.length).toBe(500);
+      }
+    }
+  });
+
+  it('rejects files that are not RIFF/WAV', () => {
+    expect(() => decodeWav(new ArrayBuffer(8))).toThrow(/too short/i);
+    expect(() => decodeWav(new ArrayBuffer(128))).toThrow(/RIFF/i);
+  });
+
+  it('round-trips its own export', async () => {
+    const project = defaultProject();
+    const files = await exportMix({
+      project,
+      samples: buildFactorySamples(44100),
+      opts: { bars: 1, scope: 'mix', format: 'wav', includeTail: false, trackIndex: 0 },
+    });
+    const dec = decodeWav(await files[0].blob.arrayBuffer());
+    expect(dec.sampleRate).toBe(44100);
+    expect(dec.left.length).toBeGreaterThan(44100);
+    expect(rms(dec.left)).toBeGreaterThan(0.01);
+  });
+});
+
 describe('master FX chain', () => {
   const render = (enable: string | null) => {
     const project = defaultProject();
