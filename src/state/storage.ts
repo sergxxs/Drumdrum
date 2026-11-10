@@ -205,5 +205,18 @@ export function migrate(p: Project): Project {
   if (!p.chain) p.chain = [];
   if (p.chainLoop === undefined) p.chainLoop = true;
   if (!Array.isArray(p.samples)) p.samples = [];
+  // Older builds shipped a WIDTH insert that duplicated master.width and did nothing on
+  // its own; drop it so the chain only contains effects that actually process audio.
+  if (Array.isArray(p.master?.chain)) {
+    p.master.chain = p.master.chain.filter((c) => c.type !== 'WIDTH');
+    if (p.master.chain.length === 0) {
+      p.master.chain = [
+        { type: 'DIST', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
+        { type: 'CRUSH', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
+        { type: 'MOD', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
+        { type: 'RING', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
+      ];
+    }
+  }
   return p;
 }

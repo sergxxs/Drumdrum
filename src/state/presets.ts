@@ -71,7 +71,6 @@ export function defaultMasterParams(): MasterParams {
       { type: 'CRUSH', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
       { type: 'MOD', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
       { type: 'RING', on: false, mix: 0.2, p1: 0.5, p2: 0.5, p3: 0.5 },
-      { type: 'WIDTH', on: true, mix: 1, p1: 0.5, p2: 0.5, p3: 0.5 },
     ],
   };
 }

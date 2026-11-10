@@ -8,6 +8,7 @@ import { exportMix } from '../src/export/render';
 import { Store } from '../src/state/store';
 import { rms, peak } from '../src/audio/dsp';
 import { buildFactorySamples } from '../src/audio/sample';
+import { AudioEngine } from '../src/audio/engine';
 
 beforeAll(() => {
   installCanvasStubs();
@@ -19,6 +20,61 @@ beforeAll(() => {
     addEventListener() {},
     removeEventListener() {},
   };
+});
+
+describe('master FX chain', () => {
+  const render = (enable: string | null) => {
+    const project = defaultProject();
+    for (const fx of project.master.chain) {
+      fx.on = fx.type === enable;
+      fx.mix = 0.9;
+    }
+    const engine = new AudioEngine(project, { sampleRate: 44100 });
+    for (const smp of buildFactorySamples(44100)) engine.bank.set(smp);
+    engine.setKit(project.kits[0]);
+    engine.play();
+    return engine.renderOffline(1.5);
+  };
+  const diff = (a: Float32Array, b: Float32Array) => {
+    let s = 0;
+    for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
+    return s / a.length;
+  };
+
+  it('every insert slot actually processes audio', () => {
+    const dry = render(null);
+    for (const type of ['DIST', 'CRUSH', 'MOD', 'RING']) {
+      const wet = render(type);
+      expect(diff(dry.left, wet.left), type).toBeGreaterThan(0.01);
+    }
+  });
+
+  it('ships no duplicate WIDTH insert (that control lives on the master bus)', () => {
+    const project = defaultProject();
+    expect(project.master.chain.some((c) => c.type === 'WIDTH')).toBe(false);
+    expect(project.master.chain.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('mono width collapses the sides and wide width expands them', () => {
+    const corr = (width: number) => {
+      const project = defaultProject();
+      project.master.width = width;
+      const engine = new AudioEngine(project, { sampleRate: 44100 });
+      for (const smp of buildFactorySamples(44100)) engine.bank.set(smp);
+      engine.setKit(project.kits[0]);
+      engine.play();
+      const out = engine.renderOffline(1.5);
+      let sl = 0, sr = 0, slr = 0;
+      for (let i = 0; i < out.left.length; i++) {
+        sl += out.left[i] * out.left[i];
+        sr += out.right[i] * out.right[i];
+        slr += out.left[i] * out.right[i];
+      }
+      return slr / Math.sqrt(sl * sr);
+    };
+    expect(corr(0)).toBeGreaterThan(0.99);
+    expect(corr(1)).toBeLessThan(0.99);
+  });
 });
 
 describe('WAV encoding', () => {

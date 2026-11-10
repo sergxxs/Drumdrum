@@ -27,7 +27,7 @@ node scripts/boot-check.mjs   # boots the whole app headlessly and drives the pa
 | Engines | 4-op FM (8 algorithms), 8 digital synth models, sampler |
 | Tracks | 8, freely configurable, independent engine / filter / FX / sequence |
 | Sequencer | 64 steps, per-track length & speed, swing, p-locks, trig conditions, motion recording, live recording, song mode, pattern chain |
-| Effects | per-track distortion + chorus/flanger/phaser, ping-pong delay send, FDN reverb send, master insert chain (dist, bitcrush, mod, ringmod, width) + EQ + compressor |
+| Effects | per-track distortion + chorus/flanger/phaser, ping-pong delay send, FDN reverb send, 4-slot master insert chain (drive, bitcrush, mod, ringmod) + 3-band EQ + stereo width + compressor |
 | Display | 192×88 1-bit LCD with a hand-built 5×7 bitmap font, 14 screens |
 | Controls | VALUE encoder, 4 parameter encoders (A–D), 8 pads, 6 mode buttons, transport, 13 function keys, mute/solo, 2 trim encoders |
 | Export | WAV 16-bit and MP3 (LAME) — master mix, song, single track, or all 8 tracks |
@@ -176,6 +176,9 @@ and saves the same way.
 - **Polyphony** is 8 voices per track; voice stealing takes the quietest voice.
 - **Free-running LFOs** are updated once per audio block (256 frames ≈ 5.8 ms), which is
   inaudible at ≤40 Hz but is not per-sample.
+- The master **width** control is a single stereo-width parameter on the master bus; it is
+  deliberately *not* also a chain insert (an older build had both, which meant one of
+  them did nothing — the duplicate is removed and migrated away).
 - Songs play through *pattern* boundaries only (no mid-pattern jumps).
 - The patterns/kit/sample lists scroll with the VALUE encoder or by scrolling the overlay;
   there is no search field yet.
@@ -186,7 +189,7 @@ and saves the same way.
 | --- | --- |
 | `tests/audio.test.ts` | every FM/mono/sample preset is audible, notes are in tune, FM index adds sidebands, all 8 mono models differ, slice/reverse/choke behaviour, filter & pan & reverb & distortion affect the signal |
 | `tests/sequencer.test.ts` | sample-accurate grid, swing, per-track speed, track length, mute, p-locks reach the DSP and change audio, automation precedence, all trig conditions, song/chain advancement with repeat counts, metronome, arrangement editing, store actions |
-| `tests/storage-export.test.ts` | WAV header correctness + round-trip, 24/32-bit, transient detection, save/load/migrate, per-track export files, song export, determinism, all 8 tracks audible through the exporter |
+| `tests/storage-export.test.ts` | WAV header correctness + round-trip, 24/32-bit, transient detection, save/load/migrate, per-track export files, song export, determinism, all 8 tracks audible through the exporter, every master insert measurably processes audio, mono/wide width correlation |
 | `tests/worklet.test.ts` | loads the built worklet bundle, asserts silence before init, audio after, parameter messages, meter messages |
 | `tests/ui.test.ts` | the 5×7 font is complete, all 6 modes + every parameter page render visible content without filling the screen, out-of-bounds safety, choice-parameter round-tripping (filter type, LFO shape/destination) |
 
